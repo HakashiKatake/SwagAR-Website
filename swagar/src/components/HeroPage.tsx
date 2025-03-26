@@ -3,100 +3,101 @@ import React from "react";
 import { HeroParallax } from "./ui/hero-parallax";
 
 export function HeroPage() {
-  return <HeroParallax products={products} />;
+  return <
+    HeroParallax products={products} />;
 }
 export const products = [
   {
-    title: "Moonbeam",
-    link: "https://gomoonbeam.com",
+    title: "",
+    link: "",
     thumbnail:
-      "https://aceternity.com/images/products/thumbnails/new/moonbeam.png",
+      "https://images.unsplash.com/photo-1523381294911-8d3cead13475?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
   },
   {
-    title: "Cursor",
-    link: "https://cursor.so",
+    title: "",
+    link: "",
     thumbnail:
-      "https://aceternity.com/images/products/thumbnails/new/cursor.png",
+      "https://images.unsplash.com/photo-1618932260643-eee4a2f652a6?q=80&w=3024&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
   },
   {
-    title: "Rogue",
-    link: "https://userogue.com",
+    title: "",
+    link: "",
     thumbnail:
-      "https://aceternity.com/images/products/thumbnails/new/rogue.png",
-  },
-
-  {
-    title: "Editorially",
-    link: "https://editorially.org",
-    thumbnail:
-      "https://aceternity.com/images/products/thumbnails/new/editorially.png",
-  },
-  {
-    title: "Editrix AI",
-    link: "https://editrix.ai",
-    thumbnail:
-      "https://aceternity.com/images/products/thumbnails/new/editrix.png",
-  },
-  {
-    title: "Pixel Perfect",
-    link: "https://app.pixelperfect.quest",
-    thumbnail:
-      "https://aceternity.com/images/products/thumbnails/new/pixelperfect.png",
+      "https://images.unsplash.com/photo-1625698311031-f0dd15be5144?q=80&w=3087&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
   },
 
   {
-    title: "Algochurn",
-    link: "https://algochurn.com",
+    title: "",
+    link: "",
     thumbnail:
-      "https://aceternity.com/images/products/thumbnails/new/algochurn.png",
+      "https://images.unsplash.com/photo-1618354691229-88d47f285158?q=80&w=2231&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
   },
   {
-    title: "Aceternity UI",
-    link: "https://ui.aceternity.com",
+    title: "",
+    link: "",
     thumbnail:
-      "https://aceternity.com/images/products/thumbnails/new/aceternityui.png",
+      "https://images.unsplash.com/photo-1499971856191-1a420a42b498?q=80&w=2658&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
   },
   {
-    title: "Tailwind Master Kit",
-    link: "https://tailwindmasterkit.com",
+    title: "",
+    link: "",
     thumbnail:
-      "https://aceternity.com/images/products/thumbnails/new/tailwindmasterkit.png",
-  },
-  {
-    title: "SmartBridge",
-    link: "https://smartbridgetech.com",
-    thumbnail:
-      "https://aceternity.com/images/products/thumbnails/new/smartbridge.png",
-  },
-  {
-    title: "Renderwork Studio",
-    link: "https://renderwork.studio",
-    thumbnail:
-      "https://aceternity.com/images/products/thumbnails/new/renderwork.png",
+      "https://images.pexels.com/photos/1176618/pexels-photo-1176618.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
   },
 
   {
-    title: "Creme Digital",
-    link: "https://cremedigital.com",
+    title: "",
+    link: "",
     thumbnail:
-      "https://aceternity.com/images/products/thumbnails/new/cremedigital.png",
+      "https://images.pexels.com/photos/3353621/pexels-photo-3353621.jpeg",
   },
   {
-    title: "Golden Bells Academy",
-    link: "https://goldenbellsacademy.com",
+    title: "",
+    link: "",
     thumbnail:
-      "https://aceternity.com/images/products/thumbnails/new/goldenbellsacademy.png",
+      "https://images.pexels.com/photos/3089830/pexels-photo-3089830.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
   },
   {
-    title: "Invoker Labs",
-    link: "https://invoker.lol",
+    title: "",
+    link: "",
     thumbnail:
-      "https://aceternity.com/images/products/thumbnails/new/invoker.png",
+      "https://images.pexels.com/photos/1183266/pexels-photo-1183266.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
   },
   {
-    title: "E Free Invoice",
-    link: "https://efreeinvoice.com",
+    title: "",
+    link: "",
     thumbnail:
-      "https://aceternity.com/images/products/thumbnails/new/efreeinvoice.png",
+      "https://static.vecteezy.com/system/resources/previews/050/519/660/non_2x/a-hooded-man-is-standing-in-front-of-a-dark-background-free-photo.jpeg",
+  },
+  {
+    title: "",
+    link: "",
+    thumbnail:
+      "https://static.vecteezy.com/system/resources/previews/049/231/631/non_2x/black-hoodie-with-minimalist-elements-displayed-in-productgraphy-photo.jpg",
+  },
+
+  {
+    title: "",
+    link: "",
+    thumbnail:
+      "https://static.vecteezy.com/system/resources/previews/049/232/282/non_2x/geometric-design-on-a-black-hoodie-free-photo.jpg",
+  },
+  {
+    title: "",
+    link: "",
+    thumbnail:
+      "https://i.pinimg.com/736x/b7/3e/fa/b73efa04ee46aece89a92705c12760e2.jpg",
+  },
+  {
+    title: "",
+    link: "",
+    thumbnail:
+      "https://i.pinimg.com/736x/44/ea/8d/44ea8d2d8a34239ba162762c591352c9.jpg",
+  },
+  {
+    title: "",
+    link: "",
+    thumbnail:
+      "https://i.pinimg.com/736x/85/2a/16/852a165c5558664d46c356dcfbc067e8.jpg",
   },
 ];
