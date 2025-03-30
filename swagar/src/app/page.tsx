@@ -3,12 +3,13 @@ import { HeroPage } from "@/components/HeroPage";
 import { FeaturesSection } from "@/components/FeaturesSection";
 import { HeroComponent } from "@/components/HeroComponent";
 import { ScrollVelocity } from "@/components/ScrollVelocity/ScrollVelocity";
+import { Footer } from "@/components/FooterComponent";
 
 export default function Home() {
   return (
     <div className="min-h-screen flex flex-col bg-black text-white">
       <HeroPage />
-      <HeroComponent />
+      
 
       {/* Section with centered "Features" text */}
       <section className="w-full py-16 flex items-center justify-center">
@@ -16,18 +17,24 @@ export default function Home() {
       </section>
 
       {/* ScrollVelocity with bottom margin */}
-      <section className="mb-20">
+      <section>
         <ScrollVelocity
           texts={[
             "3D Models of Clothes",
-            "AI Size Measurement",
-            "AR Feature Coming Soon",
+            "Try on clothes virtually",
+          
           ]}
           velocity={150}
         />
       </section>
 
       <FeaturesSection />
+
+      <section className="w-full py-16 flex items-center justify-center">
+        <h2 className="text-4xl font-bold">Join the club!</h2>
+      </section>
+      <HeroComponent />
+      <Footer />
     </div>
   );
 }

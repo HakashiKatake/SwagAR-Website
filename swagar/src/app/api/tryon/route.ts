@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
 
     // Expected structure: [ [ { image: { url: "..." } } ] ]
     // ...existing code...
-    const finalImageUrl = result.data[0][0].image.url;
+    const finalImageUrl = (result.data as { image: { url: string } }[][])[0][0].image.url;
     console.log("Model returned URL:", finalImageUrl);
 
     const imageResponse = await fetch(finalImageUrl, {
