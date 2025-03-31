@@ -5,6 +5,7 @@ import { HeroComponent } from "@/components/HeroComponent";
 import { ScrollVelocity } from "@/components/ScrollVelocity/ScrollVelocity";
 import { Footer } from "@/components/FooterComponent";
 import AboutMenu from "@/components/AboutMenu";
+import { AutoPlay } from "@/components/AutoPlay";
 
 export default function Home() {
   return (
@@ -15,6 +16,7 @@ export default function Home() {
         <h2 className="text-4xl font-bold">About Us</h2>
       </section>
       <AboutMenu />
+      <AutoPlay />
       
 
       {/* Section with centered "Features" text */}

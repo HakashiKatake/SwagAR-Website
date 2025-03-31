@@ -3,10 +3,9 @@ import FlowingMenu from "./FlowingMenu/FlowingMenu";
 
 
 const demoItems = [
-  { link: '#', text: 'Mojave', image: 'https://picsum.photos/600/400?random=1' },
-  { link: '#', text: 'Sonoma', image: 'https://picsum.photos/600/400?random=2' },
-  { link: '#', text: 'Monterey', image: 'https://picsum.photos/600/400?random=3' },
-  { link: '#', text: 'Sequoia', image: 'https://picsum.photos/600/400?random=4' }
+  { link: '#', text: 'Virtual', image: 'https://i.pinimg.com/736x/46/5f/da/465fdae0ede26b8728cc8291ecd93195.jpg' },
+  { link: '#', text: 'Tryon', image: 'https://i.pinimg.com/736x/09/35/30/0935305b6c80bcb8028829c38a162dd8.jpg' },
+ 
 ];
 
 export default function AboutMenu() {
