@@ -4,11 +4,17 @@ import { FeaturesSection } from "@/components/FeaturesSection";
 import { HeroComponent } from "@/components/HeroComponent";
 import { ScrollVelocity } from "@/components/ScrollVelocity/ScrollVelocity";
 import { Footer } from "@/components/FooterComponent";
+import AboutMenu from "@/components/AboutMenu";
 
 export default function Home() {
   return (
     <div className="min-h-screen flex flex-col bg-black text-white">
       <HeroPage />
+
+      <section className="w-full py-16 flex items-center justify-center">
+        <h2 className="text-4xl font-bold">About Us</h2>
+      </section>
+      <AboutMenu />
       
 
       {/* Section with centered "Features" text */}
