@@ -12,6 +12,35 @@ interface FileWithPreview {
   preview: string;
 }
 
+// Add this function near your other utility functions
+const validateImageUrl = async (url: string): Promise<boolean> => {
+  try {
+    const response = await fetch(url, { method: 'HEAD' });
+    return response.ok;
+  } catch {
+    return false;
+  }
+};
+
+// Alternative using localStorage instead of cookies
+const saveToStorage = (images: string[]) => {
+  try {
+    localStorage.setItem('recentImages', JSON.stringify(images));
+  } catch (e) {
+    console.error('Error saving to localStorage:', e);
+  }
+};
+
+const loadFromStorage = (): string[] => {
+  try {
+    const stored = localStorage.getItem('recentImages');
+    return stored ? JSON.parse(stored) : [];
+  } catch (e) {
+    console.error('Error loading from localStorage:', e);
+    return [];
+  }
+};
+
 export default function VirtualTryOn() {
   // Person states
   const [useCameraPerson, setUseCameraPerson] = useState(false);
@@ -26,19 +55,43 @@ export default function VirtualTryOn() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Recent images state (retrieved from cookies)
+  // Recent images state (retrieved from localStorage)
   const [recentImages, setRecentImages] = useState<string[]>([]);
 
   // Camera references
   const personVideoRef = useRef<HTMLVideoElement>(null);
   const garmentVideoRef = useRef<HTMLVideoElement>(null);
 
-  // Retrieve recent images from cookies on mount
+  // Retrieve recent images from localStorage on mount
   useEffect(() => {
-    const storedImages = Cookies.get("recentImages");
-    if (storedImages) {
-      setRecentImages(JSON.parse(storedImages));
-    }
+    const loadAndValidateImages = async () => {
+      try {
+        const storedImages = loadFromStorage();
+        if (storedImages) {
+          // Filter out invalid URLs
+          const validatedImages = await Promise.all(
+            storedImages.map(async (img) => {
+              const isValid = await validateImageUrl(img);
+              return isValid ? img : null;
+            })
+          );
+          const filteredImages = validatedImages.filter((img): img is string => img !== null);
+          
+          // Update localStorage with only valid images
+          if (filteredImages.length !== storedImages.length) {
+            saveToStorage(filteredImages);
+          }
+          
+          setRecentImages(filteredImages);
+        }
+      } catch (error) {
+        console.error('Error loading recent images:', error);
+        saveToStorage([]);
+        setRecentImages([]);
+      }
+    };
+
+    loadAndValidateImages();
   }, []);
 
   // Validation logic
@@ -157,7 +210,7 @@ export default function VirtualTryOn() {
     };
   }, []);
 
-  // Submit form: sends images to API, then stores result in cookies and updates recentImages state
+  // Submit form: sends images to API, then stores result in localStorage and updates recentImages state
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -179,14 +232,23 @@ export default function VirtualTryOn() {
       if (data.success) {
         // Show the result in the modal
         setResultImage(data.data);
-        // Retrieve existing recent images from cookies
-        let storedImages = Cookies.get("recentImages");
-        let imagesArray = storedImages ? JSON.parse(storedImages) : [];
-        // Add new image at the beginning and limit to 5
-        imagesArray.unshift(data.data);
-        if (imagesArray.length > 5) imagesArray.pop();
-        Cookies.set("recentImages", JSON.stringify(imagesArray), { expires: 7 });
-        setRecentImages(imagesArray);
+
+        // Load existing images first
+        let currentImages: string[] = [];
+        try {
+          currentImages = loadFromStorage();
+        } catch (e) {
+          console.error("Error parsing stored images:", e);
+          currentImages = [];
+        }
+
+        // Add new image and limit to 5
+        const updatedImages = [data.data, ...currentImages].slice(0, 5);
+
+        // Store in localStorage
+        saveToStorage(updatedImages);
+
+        setRecentImages(updatedImages);
       } else {
         setError(data.error || "An error occurred while processing the images");
       }
