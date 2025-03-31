@@ -31,20 +31,14 @@ export async function POST(request: NextRequest) {
     });
 
     const token = process.env.HF_TOKEN;
-    const client = await Client.connect("vdvdvdubey/OOTDiffusion4", { hf_token: `hf_${token}` });
-    const result = await client.predict("/process_hd", {
-      vton_img: personBlob,
-      garm_img: garmentBlob,
-      n_samples: 1,
-      n_steps: 20,
-      image_scale: 1,
-      seed: -1,
+    const client = await Client.connect("RohanVashisht/tryon", { hf_token: `hf_${token}` });
+    const result = await client.predict("/predict", {
+      person_image: personBlob,
+      garment_image: garmentBlob,
     });
 
-    // Expected structure: [ [ { image: { url: "..." } } ] ]
-    // ...existing code...
-    const finalImageUrl = (result.data as { image: { url: string } }[][])[0][0].image.url;
-    console.log("Model returned URL:", finalImageUrl);
+    const finalImageUrl = (result.data as any)[0].url as string;
+    console.log("Model returned URL:", result); // PLEASE DON'T REMOVE THIS LINE
 
     const imageResponse = await fetch(finalImageUrl, {
       headers: {
