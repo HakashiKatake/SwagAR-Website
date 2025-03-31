@@ -1,6 +1,6 @@
 "use client";
-import { cn } from "@/lib/utils";
 import React from "react";
+import { cn } from "@/lib/utils";
 
 interface CardDemoProps {
   backgroundImage?: string;
@@ -19,14 +19,16 @@ export default function CardDemo({
     <div className={cn("max-w-xs w-full group/card", className)}>
       <div
         className={cn(
-          "cursor-pointer overflow-hidden relative card h-96 rounded-md shadow-xl max-w-sm mx-auto flex flex-col justify-end p-4",
-          // Use the backgroundImage prop here:
-          `bg-[url('${backgroundImage}')] bg-cover bg-center`
+          "cursor-pointer overflow-hidden relative card h-96 rounded-md shadow-xl max-w-sm mx-auto flex flex-col justify-end p-4"
         )}
+        style={{ 
+          backgroundImage: `url(${backgroundImage})`, 
+          backgroundSize: "cover",
+          backgroundPosition: "center"
+        }}
       >
         {/* Optional overlay on hover */}
         <div className="absolute w-full h-full top-0 left-0 transition duration-300 group-hover/card:bg-black opacity-60"></div>
-
         {/* Text content */}
         <div className="relative z-10 text-left">
           <h1 className="font-bold text-xl md:text-2xl text-gray-50 mb-2">

@@ -157,7 +157,7 @@ export default function VirtualTryOn() {
     };
   }, []);
 
-  // Submit form: send images to API, store result in cookies, and update recentImages state
+  // Submit form: sends images to API, then stores result in cookies and updates recentImages state
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -206,13 +206,11 @@ export default function VirtualTryOn() {
   return (
     <div className="min-h-screen bg-black text-white p-4 flex flex-col items-center">
       <h1 className="text-3xl font-bold mb-6 text-center">Virtual Try-On</h1>
-
       {error && (
         <div className="bg-red-800 border border-red-600 text-red-100 px-4 py-3 rounded mb-4 max-w-xl text-center">
           {error}
         </div>
       )}
-
       {/* Upload/Camera section */}
       <form
         onSubmit={handleSubmit}
@@ -287,7 +285,6 @@ export default function VirtualTryOn() {
             </div>
           )}
         </div>
-
         {/* Garment Section */}
         <div className="w-full flex flex-col items-center">
           <label className="block font-medium mb-2 text-center">
@@ -357,7 +354,6 @@ export default function VirtualTryOn() {
             </div>
           )}
         </div>
-
         {/* Submit Button */}
         <button
           type="submit"
@@ -397,7 +393,6 @@ export default function VirtualTryOn() {
           )}
         </button>
       </form>
-
       {/* Modal for result */}
       {resultImage && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
@@ -433,10 +428,8 @@ export default function VirtualTryOn() {
           </div>
         </div>
       )}
-
       {/* Recently Tried / Inspirations Section using CardDemo with props */}
       <RecentlyInspirationsSection recentImages={recentImages} />
-
       <Footer />
     </div>
   );
@@ -549,7 +542,6 @@ function RecentlyInspirationsSection({
           Inspirations
         </button>
       </div>
-
       {activeTab === "recent" ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
           {recentCards.map((card, idx) => (
