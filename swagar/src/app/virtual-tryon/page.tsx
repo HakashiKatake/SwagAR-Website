@@ -4,6 +4,8 @@ import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { FileUpload } from "@/components/ui/file-upload";
 import { Footer } from "@/components/FooterComponent";
+import CardDemo from "@/components/cards-demo-2";
+import Cookies from "js-cookie";
 
 interface FileWithPreview {
   file: File;
@@ -24,9 +26,20 @@ export default function VirtualTryOn() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Recent images state (retrieved from cookies)
+  const [recentImages, setRecentImages] = useState<string[]>([]);
+
   // Camera references
   const personVideoRef = useRef<HTMLVideoElement>(null);
   const garmentVideoRef = useRef<HTMLVideoElement>(null);
+
+  // Retrieve recent images from cookies on mount
+  useEffect(() => {
+    const storedImages = Cookies.get("recentImages");
+    if (storedImages) {
+      setRecentImages(JSON.parse(storedImages));
+    }
+  }, []);
 
   // Validation logic
   const validateImage = (file: File) => {
@@ -101,7 +114,8 @@ export default function VirtualTryOn() {
 
   // Capture camera frame
   const captureImage = (type: "person" | "garment") => {
-    const videoEl = type === "person" ? personVideoRef.current : garmentVideoRef.current;
+    const videoEl =
+      type === "person" ? personVideoRef.current : garmentVideoRef.current;
     if (!videoEl) return;
 
     const canvas = document.createElement("canvas");
@@ -109,9 +123,7 @@ export default function VirtualTryOn() {
     canvas.height = videoEl.videoHeight;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-
     ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
-
     const dataURL = canvas.toDataURL("image/jpeg");
     const file = dataURLtoFile(dataURL, `${type}-capture.jpg`);
     try {
@@ -127,7 +139,7 @@ export default function VirtualTryOn() {
     }
   };
 
-  // dataURL -> File
+  // Helper: dataURL -> File
   function dataURLtoFile(dataurl: string, filename: string) {
     const arr = dataurl.split(",");
     const mime = arr[0].match(/:(.*?);/)?.[1] || "image/jpeg";
@@ -148,7 +160,7 @@ export default function VirtualTryOn() {
     };
   }, []);
 
-  // Submit form
+  // Submit form: sends images to API, then stores result in cookies and updates recentImages state
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -174,6 +186,15 @@ export default function VirtualTryOn() {
       if (data.success) {
         // Show the result in the modal
         setResultImage(data.data);
+        // Retrieve existing recent images from cookies
+        let storedImages = Cookies.get("recentImages");
+        let imagesArray = storedImages ? JSON.parse(storedImages) : [];
+        // Add new image at the beginning
+        imagesArray.unshift(data.data);
+        if (imagesArray.length > 5) imagesArray.pop();
+        Cookies.set("recentImages", JSON.stringify(imagesArray), { expires: 7 });
+        // Update local state so UI refreshes
+        setRecentImages(imagesArray);
       } else {
         setError(data.error || "An error occurred while processing the images");
       }
@@ -345,7 +366,7 @@ export default function VirtualTryOn() {
           )}
         </div>
 
-        {/* Submit */}
+        {/* Submit Button */}
         <button
           type="submit"
           disabled={loading}
@@ -390,23 +411,19 @@ export default function VirtualTryOn() {
         </button>
       </form>
 
-      {/* MODAL for result */}
+      {/* Modal for result */}
       {resultImage && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
-          {/* Modal container */}
           <div className="relative bg-neutral-900 text-white max-w-xl w-full rounded-lg shadow-lg p-4">
-            {/* Close button */}
             <button
               onClick={handleCloseModal}
               className="absolute top-2 right-2 text-gray-300 hover:text-white"
             >
               <span className="text-2xl">&times;</span>
             </button>
-
-            {/* Title */}
-            <h2 className="text-xl font-bold mb-4">Your Virtual Try-On</h2>
-
-            {/* The result image */}
+            <h2 className="text-xl font-bold mb-4 text-center">
+              Your Virtual Try-On
+            </h2>
             <div className="relative w-full h-[500px] border border-gray-700 rounded mb-4 overflow-hidden">
               <Image
                 src={resultImage}
@@ -415,14 +432,10 @@ export default function VirtualTryOn() {
                 className="object-contain"
               />
             </div>
-
-            {/* Footer Info (e.g. date) */}
-            <p className="text-sm text-gray-400 mb-4">
+            <p className="text-sm text-gray-400 mb-4 text-center">
               Generated on {new Date().toLocaleDateString()}
             </p>
-
-            {/* Buttons */}
-            <div className="flex items-center justify-end space-x-4">
+            <div className="flex items-center justify-center space-x-4">
               <button className="px-4 py-2 rounded bg-gray-700 hover:bg-gray-600">
                 Save
               </button>
@@ -434,27 +447,96 @@ export default function VirtualTryOn() {
         </div>
       )}
 
-      {/* 
-        Recently Tried / Inspirations 
-      */}
-      <RecentlyInspirationsSection />
+      {/* Recently Tried / Inspirations Section using CardDemo with props */}
+      <RecentlyInspirationsSection recentImages={recentImages} />
+
       <Footer />
     </div>
   );
 }
 
 /** 
- * Inline component for "Recently Tried" and "Inspirations" tabs 
+ * Inline component for "Recently Tried" and "Inspirations" tabs, using CardDemo with props.
+ * Only title, description, and backgroundImage are passed.
  */
-function RecentlyInspirationsSection() {
+function RecentlyInspirationsSection({
+  recentImages,
+}: {
+  recentImages: string[];
+}) {
   const [activeTab, setActiveTab] = useState<"recent" | "inspirations">("recent");
 
   const handleTabClick = (tab: "recent" | "inspirations") => {
     setActiveTab(tab);
   };
 
+  // Demo card data if no recent images are stored:
+  const demoRecentCards = [
+    {
+      title: "Fresh Look",
+      description: "Explore our latest trends.",
+      backgroundImage:
+        "https://images.unsplash.com/photo-1544077960-604201fe74bc?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=1651&q=80",
+    },
+    {
+      title: "Urban Vibes",
+      description: "Modern styles for city life.",
+      backgroundImage:
+        "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=1650&q=80",
+    },
+    {
+      title: "Classic Elegance",
+      description: "Timeless designs redefined.",
+      backgroundImage:
+        "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=1650&q=80",
+    },
+    {
+      title: "Bold Statements",
+      description: "Make your mark with standout styles.",
+      backgroundImage:
+        "https://images.unsplash.com/photo-1491553895911-0055eca6402d?auto=format&fit=crop&w=1650&q=80",
+    },
+  ];
+
+  // If there are stored images, create card data from them; otherwise, use demo data.
+  const recentCards =
+    recentImages && recentImages.length > 0
+      ? recentImages.map((img: string, idx: number) => ({
+          title: `Try ${idx + 1}`,
+          description: "Your recent try-on image.",
+          backgroundImage: img,
+        }))
+      : demoRecentCards;
+
+  const inspirationCards = [
+    {
+      title: "Future Trends",
+      description: "Innovative styles for tomorrow.",
+      backgroundImage:
+        "https://images.unsplash.com/photo-1503341455253-b2e723bb3dbb?auto=format&fit=crop&w=1650&q=80",
+    },
+    {
+      title: "Street Wear",
+      description: "Casual looks with an edge.",
+      backgroundImage:
+        "https://images.unsplash.com/photo-1503341455253-b2e723bb3dbb?auto=format&fit=crop&w=1650&q=80",
+    },
+    {
+      title: "High Fashion",
+      description: "Luxury designs for discerning tastes.",
+      backgroundImage:
+        "https://images.unsplash.com/photo-1489987707025-afc1f226d198?auto=format&fit=crop&w=1650&q=80",
+    },
+    {
+      title: "Eco Chic",
+      description: "Sustainable fashion that looks great.",
+      backgroundImage:
+        "https://images.unsplash.com/photo-1520975911061-40d77079a3e6?auto=format&fit=crop&w=1650&q=80",
+    },
+  ];
+
   return (
-    <section className="mt-10 w-full max-w-4xl mx-auto">
+    <section className="mt-10 w-full max-w-4xl mx-auto text-center">
       {/* Tabs */}
       <div className="flex space-x-2 border-b border-gray-700 pb-2 mb-4 justify-center">
         <button
@@ -481,35 +563,29 @@ function RecentlyInspirationsSection() {
         </button>
       </div>
 
-      {/* Tab content */}
       {activeTab === "recent" ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-          {/* Replace placeholders with your real "Recently Tried" images */}
-          <PlaceholderCard src="/images/placeholder1.jpg" />
-          <PlaceholderCard src="/images/placeholder2.jpg" />
-          <PlaceholderCard src="/images/placeholder3.jpg" />
-          <PlaceholderCard src="/images/placeholder4.jpg" />
+          {recentCards.map((card, idx) => (
+            <CardDemo
+              key={idx}
+              backgroundImage={card.backgroundImage}
+              title={card.title}
+              description={card.description}
+            />
+          ))}
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-          {/* Replace placeholders with your real "Inspirations" images */}
-          <PlaceholderCard src="/images/inspiration1.jpg" />
-          <PlaceholderCard src="/images/inspiration2.jpg" />
-          <PlaceholderCard src="/images/inspiration3.jpg" />
-          <PlaceholderCard src="/images/inspiration4.jpg" />
+          {inspirationCards.map((card, idx) => (
+            <CardDemo
+              key={idx}
+              backgroundImage={card.backgroundImage}
+              title={card.title}
+              description={card.description}
+            />
+          ))}
         </div>
       )}
     </section>
-  );
-}
-
-/** 
- * Simple helper component for placeholders 
- */
-function PlaceholderCard({ src }: { src: string }) {
-  return (
-    <div className="relative w-full h-52 bg-gray-800 border border-gray-700 rounded overflow-hidden">
-      <Image src={src} alt="placeholder" fill className="object-cover" />
-    </div>
   );
 }
