@@ -1,13 +1,9 @@
 "use client";
-import React from "react";
 import { cn } from "@/lib/utils";
-import Image from "next/image";
+import React from "react";
 
 interface CardDemoProps {
   backgroundImage?: string;
-  avatarSrc?: string;
-  authorName?: string;
-  readTime?: string;
   title?: string;
   description?: string;
   className?: string;
@@ -15,48 +11,30 @@ interface CardDemoProps {
 
 export default function CardDemo({
   backgroundImage = "https://images.unsplash.com/photo-1544077960-604201fe74bc?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=1651&q=80",
-  avatarSrc = "/manu.png",
-  authorName = "Manu Arora",
-  readTime = "2 min read",
-  title = "Author Card",
-  description = "Card with Author avatar, complete name and time to read - most suitable for blogs.",
+  title = "Card Title",
+  description = "Some description...",
   className = "",
 }: CardDemoProps) {
   return (
-    <div className="max-w-xs w-full group/card">
+    <div className={cn("max-w-xs w-full group/card", className)}>
       <div
         className={cn(
-          "cursor-pointer overflow-hidden relative card h-96 rounded-md shadow-xl max-w-sm mx-auto flex flex-col justify-between p-4",
-          `bg-[url(${backgroundImage})] bg-cover`,
-          className
+          "cursor-pointer overflow-hidden relative card h-96 rounded-md shadow-xl max-w-sm mx-auto flex flex-col justify-end p-4",
+          // Use the backgroundImage prop here:
+          `bg-[url('${backgroundImage}')] bg-cover bg-center`
         )}
       >
-        <div className="absolute inset-0 transition duration-300 group-hover/card:bg-black opacity-60"></div>
-        <div className="flex flex-row items-center space-x-4 z-10">
-          <Image
-            height={100}
-            width={100}
-            alt="Avatar"
-            src={avatarSrc}
-            className="h-10 w-10 rounded-full border-2 object-cover"
-          />
-          <div className="flex flex-col">
-            <p className="font-normal text-base text-gray-50 relative z-10">
-              {authorName}
-            </p>
-            <p className="text-sm text-gray-400">{readTime}</p>
-          </div>
-        </div>
-        <div className="text content">
-          <h1 className="font-bold text-xl md:text-2xl text-gray-50 relative z-10">
+        {/* Optional overlay on hover */}
+        <div className="absolute w-full h-full top-0 left-0 transition duration-300 group-hover/card:bg-black opacity-60"></div>
+
+        {/* Text content */}
+        <div className="relative z-10 text-left">
+          <h1 className="font-bold text-xl md:text-2xl text-gray-50 mb-2">
             {title}
           </h1>
-          <p className="font-normal text-sm text-gray-50 relative z-10 my-4">
-            {description}
-          </p>
+          <p className="font-normal text-sm text-gray-50">{description}</p>
         </div>
       </div>
     </div>
   );
 }
-

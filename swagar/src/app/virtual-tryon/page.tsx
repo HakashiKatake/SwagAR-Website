@@ -45,7 +45,6 @@ export default function VirtualTryOn() {
   const validateImage = (file: File) => {
     const maxSize = 5 * 1024 * 1024; // 5MB
     const validTypes = ["image/jpeg", "image/png", "image/webp"];
-
     if (!validTypes.includes(file.type)) {
       throw new Error("Please upload JPEG, PNG, or WebP images only");
     }
@@ -58,7 +57,6 @@ export default function VirtualTryOn() {
   const handleFileUpload = (files: File[], type: "person" | "garment") => {
     setError(null);
     if (!files.length) return;
-
     const file = files[0];
     try {
       validateImage(file);
@@ -117,7 +115,6 @@ export default function VirtualTryOn() {
     const videoEl =
       type === "person" ? personVideoRef.current : garmentVideoRef.current;
     if (!videoEl) return;
-
     const canvas = document.createElement("canvas");
     canvas.width = videoEl.videoWidth;
     canvas.height = videoEl.videoHeight;
@@ -160,28 +157,24 @@ export default function VirtualTryOn() {
     };
   }, []);
 
-  // Submit form: sends images to API, then stores result in cookies and updates recentImages state
+  // Submit form: send images to API, store result in cookies, and update recentImages state
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setResultImage(null);
-
     if (!personImage?.file || !garmentImage?.file) {
       setError("Please upload both images or capture them from camera.");
       return;
     }
-
     setLoading(true);
     try {
       const formData = new FormData();
       formData.append("person", personImage.file);
       formData.append("garment", garmentImage.file);
-
       const response = await fetch("/api/tryon", {
         method: "POST",
         body: formData,
       });
-
       const data = await response.json();
       if (data.success) {
         // Show the result in the modal
@@ -189,11 +182,10 @@ export default function VirtualTryOn() {
         // Retrieve existing recent images from cookies
         let storedImages = Cookies.get("recentImages");
         let imagesArray = storedImages ? JSON.parse(storedImages) : [];
-        // Add new image at the beginning
+        // Add new image at the beginning and limit to 5
         imagesArray.unshift(data.data);
         if (imagesArray.length > 5) imagesArray.pop();
         Cookies.set("recentImages", JSON.stringify(imagesArray), { expires: 7 });
-        // Update local state so UI refreshes
         setRecentImages(imagesArray);
       } else {
         setError(data.error || "An error occurred while processing the images");
@@ -226,9 +218,11 @@ export default function VirtualTryOn() {
         onSubmit={handleSubmit}
         className="space-y-8 w-full max-w-2xl flex flex-col items-center"
       >
-        {/* Person */}
+        {/* Person Section */}
         <div className="w-full flex flex-col items-center">
-          <label className="block font-medium mb-2 text-center">Person Image:</label>
+          <label className="block font-medium mb-2 text-center">
+            Person Image:
+          </label>
           <div className="flex space-x-2 mb-2">
             <button
               type="button"
@@ -260,7 +254,6 @@ export default function VirtualTryOn() {
               Upload Picture
             </button>
           </div>
-
           {useCameraPerson ? (
             <div className="flex flex-col items-center">
               <video
@@ -283,7 +276,6 @@ export default function VirtualTryOn() {
               className="bg-gray-800 border border-gray-600 w-full max-w-sm"
             />
           )}
-
           {personImage?.preview && (
             <div className="mt-2 relative h-64 w-48 border border-gray-700 rounded overflow-hidden">
               <Image
@@ -296,9 +288,11 @@ export default function VirtualTryOn() {
           )}
         </div>
 
-        {/* Garment */}
+        {/* Garment Section */}
         <div className="w-full flex flex-col items-center">
-          <label className="block font-medium mb-2 text-center">Garment Image:</label>
+          <label className="block font-medium mb-2 text-center">
+            Garment Image:
+          </label>
           <div className="flex space-x-2 mb-2">
             <button
               type="button"
@@ -330,7 +324,6 @@ export default function VirtualTryOn() {
               Upload Picture
             </button>
           </div>
-
           {useCameraGarment ? (
             <div className="flex flex-col items-center">
               <video
@@ -353,7 +346,6 @@ export default function VirtualTryOn() {
               className="bg-gray-800 border border-gray-600 w-full max-w-sm"
             />
           )}
-
           {garmentImage?.preview && (
             <div className="mt-2 relative h-64 w-48 border border-gray-700 rounded overflow-hidden">
               <Image
@@ -395,12 +387,7 @@ export default function VirtualTryOn() {
                 <path
                   className="opacity-75"
                   fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 
-                    0 0 5.373 0 12h4zm2 
-                    5.291A7.962 7.962 
-                    0 014 12H0c0 3.042 
-                    1.135 5.824 3 
-                    7.938l3-2.647z"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                 ></path>
               </svg>
               Processing...
