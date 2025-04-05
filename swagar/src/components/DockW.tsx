@@ -7,7 +7,7 @@ import { VscHome, VscArchive} from 'react-icons/vsc';
 
 
 const dockItems = [
-  { icon: <VscHome size={18} />, label: "Home", onClick: () => window.location.href = "/" },
+  { icon: <VscHome size={16} />, label: "Home", onClick: () => window.location.href = "/" },
   { icon: <VscArchive size={18} />, label: "Try-on", onClick: () => window.location.href = "/virtual-tryon" },
  
   
