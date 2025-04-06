@@ -1,7 +1,9 @@
 "use client";
 import { ThreeDMarquee } from "@/components/ui/3d-marquee";
+import { useRouter } from "next/navigation"; // Import useRouter
 
 export function HeroComponent() {
+  const router = useRouter(); // Initialize the router
   const images = [
     "https://i.pinimg.com/736x/ca/f5/45/caf54519e5183e454f641a83ba06257f.jpg",
     "https://i.pinimg.com/736x/1f/0b/61/1f0b6175df77b8bac599db3ad62cb2f4.jpg",
@@ -31,6 +33,7 @@ export function HeroComponent() {
     "https://i.pinimg.com/736x/85/2a/16/852a165c5558664d46c356dcfbc067e8.jpg",
 
   ];
+
   return (
     <div className="relative mx-auto my-10 flex h-screen w-full max-w-7xl flex-col items-center justify-center overflow-hidden rounded-3xl">
       <h2 className="relative z-20 mx-auto max-w-4xl text-center text-2xl font-bold text-balance text-white md:text-4xl lg:text-6xl">
@@ -45,7 +48,10 @@ export function HeroComponent() {
       </p>
 
       <div className="relative z-20 flex flex-wrap items-center justify-center gap-4 pt-4">
-        <button className="rounded-md bg-sky-600 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-sky-700 focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-black focus:outline-none">
+        <button
+          className="rounded-md bg-sky-600 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-sky-700 focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-black focus:outline-none"
+          onClick={() => router.push("/virtual-tryon")} // Navigate to /virtual-tryon
+        >
           Get Started
         </button>
         <button className="rounded-md border border-white/20 bg-white/10 px-6 py-2.5 text-sm font-medium text-white backdrop-blur-sm transition-colors hover:bg-white/20 focus:ring-2 focus:ring-white/20 focus:ring-offset-2 focus:ring-offset-black focus:outline-none">
