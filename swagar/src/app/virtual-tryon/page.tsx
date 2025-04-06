@@ -523,6 +523,7 @@ export default function VirtualTryOn() {
       <h1 className="text-3xl font-bold mb-6 text-center">Virtual Try-On</h1>
       <h2 className="text-xl mb-4 text-center">
         Note: This is a demo version. The results may not be perfect.
+        If it gives an error, just retry again.
       </h2>
       {error && (
         <div className="bg-red-800 border border-red-600 text-red-100 px-4 py-3 rounded mb-4 max-w-xl text-center">
@@ -1030,17 +1031,7 @@ function RecentlyInspirationsSection({
           <span className="mr-2">⏱</span>
           Recently Tried
         </button>
-        <button
-          className={`flex items-center px-4 py-2 rounded-full text-sm transition-colors ${
-            activeTab === "inspirations"
-              ? "bg-gray-700 text-white"
-              : "bg-gray-800 text-gray-400 hover:bg-gray-700"
-          }`}
-          onClick={() => handleTabClick("inspirations")}
-        >
-          <span className="mr-2">✨</span>
-          Inspirations
-        </button>
+        
       </div>
       
       {activeTab === "recent" ? (
