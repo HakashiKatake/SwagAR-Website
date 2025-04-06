@@ -67,14 +67,12 @@ export const FileUpload = ({
           onChange={(e) => handleFileChange(Array.from(e.target.files || []))}
           className="hidden"
         />
-        <div className="absolute inset-0 [mask-image:radial-gradient(ellipse_at_center,white,transparent)]">
-          <GridPattern />
-        </div>
+        {/* Removed GridPattern component */}
         <div className="flex flex-col items-center justify-center">
-          <p className="relative z-20 font-sans font-bold text-white text-base">
+          <p className="relative z-20 font-sans font-bold text-white text-lg">
             Upload file
           </p>
-          <p className="relative z-20 font-sans font-normal text-gray-300 text-base mt-2">
+          <p className="relative z-20 font-sans font-normal text-white text-base mt-2">
             Drag or drop your files here or click to upload
           </p>
           <div className="relative w-full mt-10 max-w-xl mx-auto">
@@ -170,6 +168,7 @@ export const FileUpload = ({
   );
 };
 
+// Keeping GridPattern function for reference but not using it
 export function GridPattern() {
   const columns = 41;
   const rows = 11;
