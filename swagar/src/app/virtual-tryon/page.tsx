@@ -47,6 +47,34 @@ const loadFromStorage = (): string[] => {
   }
 };
 
+// AI Suggestions for the modal view
+const aiSuggestions = [
+  "You look great in this outfit! The color really complements your skin tone.",
+  "This garment fits your body shape perfectly. The style suits you well!",
+  "This is a fantastic match! The design enhances your natural features.",
+  "This look really works for you. The pattern and cut are very flattering.",
+  "The silhouette of this garment works wonderfully with your frame.",
+  "This style brings out your best features. Consider trying similar designs!",
+  "The color palette of this outfit really makes you stand out.",
+  "This combination is very balanced and proportional for your body type.",
+  "This look gives you a polished appearance. Perfect for your style profile!",
+  "The fit is excellent and the style harmonizes well with your overall look."
+];
+
+// Styling suggestions
+const stylingSuggestions = [
+  "Try pairing this with some minimalist accessories for a more elegant look.",
+  "This would look great with a statement necklace or bold earrings.",
+  "Consider layering with a light jacket or cardigan for added dimension.",
+  "This outfit would pair well with neutral-toned footwear.",
+  "Add a belt to define the waist and create more structure.",
+  "For a casual look, roll up the sleeves and add some bangles or a watch.",
+  "A simple scarf could add a pop of color to complete this look.",
+  "This would work well with both casual and formal footwear depending on the occasion.",
+  "Consider adding a hat or headband to complement this outfit.",
+  "Try contrasting textures with your accessories to add visual interest."
+];
+
 export default function VirtualTryOn() {
   // Person states
   const [useCameraPerson, setUseCameraPerson] = useState(false);
@@ -60,6 +88,10 @@ export default function VirtualTryOn() {
   const [resultImage, setResultImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // AI suggestion states
+  const [aiSuggestion, setAiSuggestion] = useState<string>("");
+  const [stylingSuggestion, setStylingSuggestion] = useState<string>("");
   
   // Loading state for inspiration image loading
   const [loadingInspirationImage, setLoadingInspirationImage] = useState(false);
@@ -130,6 +162,16 @@ export default function VirtualTryOn() {
       return () => clearTimeout(timer);
     }
   }, [shareMessage]);
+
+  // Generate random AI suggestions when resultImage changes
+  useEffect(() => {
+    if (resultImage) {
+      const randomAiSuggestion = aiSuggestions[Math.floor(Math.random() * aiSuggestions.length)];
+      const randomStylingSuggestion = stylingSuggestions[Math.floor(Math.random() * stylingSuggestions.length)];
+      setAiSuggestion(randomAiSuggestion);
+      setStylingSuggestion(randomStylingSuggestion);
+    }
+  }, [resultImage]);
 
   // Validation logic
   const validateImage = (file: File) => {
@@ -472,6 +514,8 @@ export default function VirtualTryOn() {
   const handleCloseModal = () => {
     setResultImage(null);
     setShareMessage(null);
+    setAiSuggestion("");
+    setStylingSuggestion("");
   };
 
   return (
@@ -735,6 +779,34 @@ export default function VirtualTryOn() {
             <p className="text-sm text-gray-400 mb-2 text-center">
               Generated on {new Date().toLocaleDateString()}
             </p>
+            
+            {/* AI Suggestion Section */}
+            <div className="mb-4 p-4 bg-gradient-to-r from-blue-900 to-purple-900 rounded-lg">
+              <div className="flex items-start mb-2">
+                <div className="bg-blue-600 p-1 rounded-full mr-2">
+                  <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    className="h-5 w-5 text-white" 
+                    fill="none" 
+                    viewBox="0 0 24 24" 
+                    stroke="currentColor"
+                  >
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      strokeWidth={2} 
+                      d="M13 10V3L4 14h7v7l9-11h-7z" 
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-blue-100">AI Style Assistant</h3>
+                  <p className="text-blue-50 mt-1">"{aiSuggestion}"</p>
+                  <p className="mt-2 text-blue-100 font-medium">Styling Tip:</p>
+                  <p className="text-blue-50">{stylingSuggestion}</p>
+                </div>
+              </div>
+            </div>
             
             {/* Share message notification */}
             {shareMessage && (
