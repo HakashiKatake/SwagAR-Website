@@ -757,65 +757,71 @@ export default function VirtualTryOn() {
       {/* Modal for result */}
       {resultImage && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
-          <div className="relative bg-neutral-900 text-white max-w-xl w-full rounded-lg shadow-lg p-4">
+          <div className="relative bg-neutral-900 text-white max-w-xl w-full rounded-lg shadow-lg p-4 flex flex-col max-h-[90vh]">
             <button
               onClick={handleCloseModal}
-              className="absolute top-2 right-2 text-gray-300 hover:text-white"
+              className="absolute top-2 right-2 text-gray-300 hover:text-white z-10"
             >
               <span className="text-2xl">&times;</span>
             </button>
             <h2 className="text-xl font-bold mb-4 text-center">
               Your Virtual Try-On
             </h2>
-            <div className="relative w-full h-[500px] border border-gray-700 rounded mb-4 overflow-hidden">
-              {/* For remote URLs, Next.js Image is fine */}
-              <Image
-                src={resultImage}
-                alt="Try-on Result"
-                fill
-                className="object-contain"
-              />
-            </div>
-            <p className="text-sm text-gray-400 mb-2 text-center">
-              Generated on {new Date().toLocaleDateString()}
-            </p>
             
-            {/* AI Suggestion Section */}
-            <div className="mb-4 p-4 bg-gradient-to-r from-blue-900 to-purple-900 rounded-lg">
-              <div className="flex items-start mb-2">
-                <div className="bg-blue-600 p-1 rounded-full mr-2">
-                  <svg 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    className="h-5 w-5 text-white" 
-                    fill="none" 
-                    viewBox="0 0 24 24" 
-                    stroke="currentColor"
-                  >
-                    <path 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round" 
-                      strokeWidth={2} 
-                      d="M13 10V3L4 14h7v7l9-11h-7z" 
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-blue-100">AI Style Assistant</h3>
-                  <p className="text-blue-50 mt-1">"{aiSuggestion}"</p>
-                  <p className="mt-2 text-blue-100 font-medium">Styling Tip:</p>
-                  <p className="text-blue-50">{stylingSuggestion}</p>
+            {/* Scrollable content area */}
+            <div className="overflow-y-auto flex-grow pr-2 pb-20">
+              <div className="relative w-full h-[400px] border border-gray-700 rounded mb-4">
+                {/* For remote URLs, Next.js Image is fine */}
+                <Image
+                  src={resultImage}
+                  alt="Try-on Result"
+                  fill
+                  className="object-contain"
+                />
+              </div>
+              
+              <p className="text-sm text-gray-400 mb-2 text-center">
+                Generated on {new Date().toLocaleDateString()}
+              </p>
+              
+              {/* AI Suggestion Section */}
+              <div className="mb-4 p-4 bg-gradient-to-r from-blue-900 to-purple-900 rounded-lg">
+                <div className="flex items-start">
+                  <div className="bg-blue-600 p-1 rounded-full mr-2 flex-shrink-0 mt-1">
+                    <svg 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      className="h-5 w-5 text-white" 
+                      fill="none" 
+                      viewBox="0 0 24 24" 
+                      stroke="currentColor"
+                    >
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        strokeWidth={2} 
+                        d="M13 10V3L4 14h7v7l9-11h-7z" 
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-blue-100">AI Style Assistant</h3>
+                    <p className="text-blue-50 mt-1">"{aiSuggestion}"</p>
+                    <p className="mt-2 text-blue-100 font-medium">Styling Tip:</p>
+                    <p className="text-blue-50">{stylingSuggestion}</p>
+                  </div>
                 </div>
               </div>
+              
+              {/* Share message notification */}
+              {shareMessage && (
+                <div className="bg-blue-900 text-blue-100 px-3 py-2 rounded-md mb-4 text-center text-sm">
+                  {shareMessage}
+                </div>
+              )}
             </div>
             
-            {/* Share message notification */}
-            {shareMessage && (
-              <div className="bg-blue-900 text-blue-100 px-3 py-2 rounded-md mb-4 text-center text-sm">
-                {shareMessage}
-              </div>
-            )}
-            
-            <div className="flex items-center justify-center space-x-4">
+            {/* Fixed button bar at bottom of modal */}
+            <div className="absolute bottom-0 left-0 right-0 p-4 bg-neutral-900 border-t border-gray-800 flex items-center justify-center space-x-4">
               <button 
                 onClick={handleSaveImage}
                 disabled={isSaving}
