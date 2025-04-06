@@ -63,6 +63,11 @@ export default function VirtualTryOn() {
   
   // Loading state for inspiration image loading
   const [loadingInspirationImage, setLoadingInspirationImage] = useState(false);
+  
+  // State for Save and Share buttons
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
+  const [shareMessage, setShareMessage] = useState<string | null>(null);
 
   // Recent images state (retrieved from localStorage)
   const [recentImages, setRecentImages] = useState<string[]>([]);
@@ -114,6 +119,17 @@ export default function VirtualTryOn() {
       if (garmentImage?.preview) URL.revokeObjectURL(garmentImage.preview);
     };
   }, [personImage?.preview, garmentImage?.preview]);
+  
+  // Reset share message after a delay
+  useEffect(() => {
+    if (shareMessage) {
+      const timer = setTimeout(() => {
+        setShareMessage(null);
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [shareMessage]);
 
   // Validation logic
   const validateImage = (file: File) => {
@@ -166,6 +182,85 @@ export default function VirtualTryOn() {
     } catch (error) {
       console.error("Error fetching image:", error);
       return null;
+    }
+  };
+
+  // Function to handle saving the image
+  const handleSaveImage = async () => {
+    if (!resultImage || isSaving) return;
+    
+    setIsSaving(true);
+    try {
+      // Fetch the image and create a blob
+      const response = await fetch(resultImage);
+      const blob = await response.blob();
+      
+      // Create a temporary anchor element
+      const link = document.createElement('a');
+      link.href = window.URL.createObjectURL(blob);
+      link.download = `virtual-tryon-${new Date().getTime()}.jpg`;
+      
+      // Append to the body, click, and remove
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up the object URL
+      window.URL.revokeObjectURL(link.href);
+    } catch (err) {
+      console.error("Error downloading image:", err);
+      setError("Failed to download image. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Function to handle sharing the image
+  const handleShareImage = async () => {
+    if (!resultImage || isSharing) return;
+    
+    setIsSharing(true);
+    
+    try {
+      // Check if Web Share API is supported
+      if (navigator.share && navigator.canShare) {
+        const imageFile = await fetchImageAsFile(resultImage, 'virtual-tryon');
+        
+        if (imageFile) {
+          const shareData = {
+            title: 'My Virtual Try-On',
+            text: 'Check out my virtual try-on result!',
+            files: [imageFile]
+          };
+          
+          // Try to share with files
+          if (navigator.canShare(shareData)) {
+            await navigator.share(shareData);
+            return;
+          }
+        }
+        
+        // Fallback to sharing link only
+        await navigator.share({
+          title: 'My Virtual Try-On',
+          text: 'Check out my virtual try-on result!',
+          url: resultImage
+        });
+      } else {
+        // Fallback for browsers without Web Share API: copy URL to clipboard
+        await navigator.clipboard.writeText(resultImage);
+        setShareMessage("Image URL copied to clipboard!");
+      }
+    } catch (err) {
+      console.error("Error sharing image:", err);
+      // If we can't share or copy to clipboard, show a message
+      setShareMessage(
+        navigator.clipboard 
+          ? "Failed to share. Image URL copied to clipboard instead."
+          : "Failed to share. Please try again."
+      );
+    } finally {
+      setIsSharing(false);
     }
   };
 
@@ -376,6 +471,7 @@ export default function VirtualTryOn() {
   // Close the modal
   const handleCloseModal = () => {
     setResultImage(null);
+    setShareMessage(null);
   };
 
   return (
@@ -636,15 +732,51 @@ export default function VirtualTryOn() {
                 className="object-contain"
               />
             </div>
-            <p className="text-sm text-gray-400 mb-4 text-center">
+            <p className="text-sm text-gray-400 mb-2 text-center">
               Generated on {new Date().toLocaleDateString()}
             </p>
+            
+            {/* Share message notification */}
+            {shareMessage && (
+              <div className="bg-blue-900 text-blue-100 px-3 py-2 rounded-md mb-4 text-center text-sm">
+                {shareMessage}
+              </div>
+            )}
+            
             <div className="flex items-center justify-center space-x-4">
-              <button className="px-4 py-2 rounded bg-gray-700 hover:bg-gray-600">
-                Save
+              <button 
+                onClick={handleSaveImage}
+                disabled={isSaving}
+                className={`px-4 py-2 rounded font-medium ${
+                  isSaving ? "bg-gray-500 cursor-not-allowed" : "bg-gray-700 hover:bg-gray-600"
+                } flex items-center justify-center min-w-[80px]`}
+              >
+                {isSaving ? (
+                  <span className="flex items-center">
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Saving
+                  </span>
+                ) : "Save"}
               </button>
-              <button className="px-4 py-2 rounded bg-blue-600 hover:bg-blue-500">
-                Share
+              <button 
+                onClick={handleShareImage}
+                disabled={isSharing}
+                className={`px-4 py-2 rounded font-medium ${
+                  isSharing ? "bg-gray-500 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-500"
+                } flex items-center justify-center min-w-[80px]`}
+              >
+                {isSharing ? (
+                  <span className="flex items-center">
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Sharing
+                  </span>
+                ) : "Share"}
               </button>
             </div>
           </div>
