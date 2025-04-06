@@ -521,6 +521,9 @@ export default function VirtualTryOn() {
   return (
     <div className="min-h-screen bg-black text-white p-4 flex flex-col items-center">
       <h1 className="text-3xl font-bold mb-6 text-center">Virtual Try-On</h1>
+      <h2 className="text-xl mb-4 text-center">
+        Note: This is a demo version. The results may not be perfect.
+      </h2>
       {error && (
         <div className="bg-red-800 border border-red-600 text-red-100 px-4 py-3 rounded mb-4 max-w-xl text-center">
           {error}
