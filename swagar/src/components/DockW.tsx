@@ -1,27 +1,25 @@
-// src/components/DockWrapper.tsx
-'use client';
+"use client";
+import React from "react";
+import { FloatingNav } from "./ui/floating-navbar";
+import { IconHome, IconMessage, IconUser } from "@tabler/icons-react";
+export function FloatingNavDemo() {
+  const navItems = [
+    {
+      name: "Home",
+      link: "/",
+      icon: <IconHome className="h-4 w-4 text-neutral-500 dark:text-white" />,
+    },
+    {
+      name: "Try-on",
+      link: "/virtual-tryon",
+      icon: <IconUser className="h-4 w-4 text-neutral-500 dark:text-white" />,
+    },
 
-import React from 'react';
-import Dock from '@/components/ui/Docker'; // Adjust path if necessary
-import { VscHome, VscArchive} from 'react-icons/vsc';
-
-
-const dockItems = [
-  { icon: <VscHome size={16} />, label: "Home", onClick: () => window.location.href = "/" },
-  { icon: <VscArchive size={18} />, label: "Try-on", onClick: () => window.location.href = "/virtual-tryon" },
- 
-  
-];
-
-export default function DockWrapper() {
+  ];
   return (
-    <div className="fixed bottom-0 left-0 w-full z-50">
-      <Dock 
-        items={dockItems}
-        panelHeight={68}
-        baseItemSize={50}
-        magnification={70}
-      />
+    <div className="relative  w-full">
+      <FloatingNav navItems={navItems} />
+     
     </div>
   );
 }

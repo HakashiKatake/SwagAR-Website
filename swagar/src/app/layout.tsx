@@ -1,8 +1,10 @@
 // src/app/layout.tsx
+import { FloatingNav } from "@/components/ui/floating-navbar";
 import "./globals.css";
 import { Inter } from "next/font/google";
 import React from "react"; // Adjust path if necessary
-import DockWrapper from "@/components/DockW"; // Adjust path if necessary
+import { FloatingNavDemo } from "@/components/DockW";
+ // Adjust path if necessary
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -16,10 +18,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className={`${inter.className} relative`}>
         {/* Render the SplashCursor on every page */}
-     
+        <FloatingNavDemo />
         {children}
         {/* Render the Dock via the client component */}
-        <DockWrapper />
+        
       </body>
     </html>
   );
