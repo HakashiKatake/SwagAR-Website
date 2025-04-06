@@ -12,21 +12,37 @@ interface FileWithPreview {
   preview: string;
 }
 
-// Optional localStorage utilities (if you prefer using localStorage over cookies)
+interface Card {
+  title: string;
+  description: string;
+  backgroundImage: string;
+}
+
+// Add this function near your other utility functions
+const validateImageUrl = async (url: string): Promise<boolean> => {
+  try {
+    const response = await fetch(url, { method: 'HEAD' });
+    return response.ok;
+  } catch {
+    return false;
+  }
+};
+
+// Alternative using localStorage instead of cookies
 const saveToStorage = (images: string[]) => {
   try {
-    localStorage.setItem("recentImages", JSON.stringify(images));
+    localStorage.setItem('recentImages', JSON.stringify(images));
   } catch (e) {
-    console.error("Error saving to localStorage:", e);
+    console.error('Error saving to localStorage:', e);
   }
 };
 
 const loadFromStorage = (): string[] => {
   try {
-    const stored = localStorage.getItem("recentImages");
+    const stored = localStorage.getItem('recentImages');
     return stored ? JSON.parse(stored) : [];
   } catch (e) {
-    console.error("Error loading from localStorage:", e);
+    console.error('Error loading from localStorage:', e);
     return [];
   }
 };
@@ -42,26 +58,64 @@ export default function VirtualTryOn() {
 
   // Modal / result states
   const [resultImage, setResultImage] = useState<string | null>(null);
-  const [assistantText, setAssistantText] = useState<string>("");  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Loading state for inspiration image loading
+  const [loadingInspirationImage, setLoadingInspirationImage] = useState(false);
 
-  // Recent images state (retrieved from cookies)
+  // Recent images state (retrieved from localStorage)
   const [recentImages, setRecentImages] = useState<string[]>([]);
 
   // Camera references
   const personVideoRef = useRef<HTMLVideoElement>(null);
   const garmentVideoRef = useRef<HTMLVideoElement>(null);
 
-  // Retrieve recent images from cookies on mount
+  // References for file input
+  const personFileInputRef = useRef<HTMLInputElement>(null);
+  const garmentFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Retrieve recent images from localStorage on mount
   useEffect(() => {
-    const storedImages = Cookies.get("recentImages");
-    if (storedImages) {
-      setRecentImages(JSON.parse(storedImages));
-    }
+    const loadAndValidateImages = async () => {
+      try {
+        const storedImages = loadFromStorage();
+        if (storedImages) {
+          // Filter out invalid URLs
+          const validatedImages = await Promise.all(
+            storedImages.map(async (img) => {
+              const isValid = await validateImageUrl(img);
+              return isValid ? img : null;
+            })
+          );
+          const filteredImages = validatedImages.filter((img): img is string => img !== null);
+          
+          // Update localStorage with only valid images
+          if (filteredImages.length !== storedImages.length) {
+            saveToStorage(filteredImages);
+          }
+          
+          setRecentImages(filteredImages);
+        }
+      } catch (error) {
+        console.error('Error loading recent images:', error);
+        saveToStorage([]);
+        setRecentImages([]);
+      }
+    };
+
+    loadAndValidateImages();
   }, []);
 
-  // Validation logic for file uploads
+  // Clean up object URLs on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (personImage?.preview) URL.revokeObjectURL(personImage.preview);
+      if (garmentImage?.preview) URL.revokeObjectURL(garmentImage.preview);
+    };
+  }, [personImage?.preview, garmentImage?.preview]);
+
+  // Validation logic
   const validateImage = (file: File) => {
     const maxSize = 5 * 1024 * 1024; // 5MB
     const validTypes = ["image/jpeg", "image/png", "image/webp"];
@@ -80,6 +134,13 @@ export default function VirtualTryOn() {
     const file = files[0];
     try {
       validateImage(file);
+      // Revoke previous object URL if it exists
+      if (type === "person" && personImage?.preview) {
+        URL.revokeObjectURL(personImage.preview);
+      } else if (type === "garment" && garmentImage?.preview) {
+        URL.revokeObjectURL(garmentImage.preview);
+      }
+      
       const preview = URL.createObjectURL(file);
       if (type === "person") {
         setPersonImage({ file, preview });
@@ -91,6 +152,85 @@ export default function VirtualTryOn() {
     }
   };
 
+  // Function to download image from URL and convert to File
+  const fetchImageAsFile = async (imageUrl: string, fileName: string): Promise<File | null> => {
+    try {
+      const response = await fetch(imageUrl);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch image: ${response.statusText}`);
+      }
+      const blob = await response.blob();
+      // Get file extension from the URL or response content type
+      const fileExtension = response.headers.get('content-type')?.split('/')[1] || 'jpeg';
+      return new File([blob], `${fileName}.${fileExtension}`, { type: blob.type });
+    } catch (error) {
+      console.error("Error fetching image:", error);
+      return null;
+    }
+  };
+
+  // Function to handle inspiration image selection
+  const handleInspirationSelect = async (imageUrl: string) => {
+    if (loadingInspirationImage) return; // Prevent multiple clicks while loading
+    
+    setError(null);
+    setLoadingInspirationImage(true);
+    
+    try {
+      // Disable camera mode if active
+      if (useCameraGarment) {
+        stopCamera("garment");
+        setUseCameraGarment(false);
+      }
+      
+      // Download and process the image
+      const file = await fetchImageAsFile(imageUrl, `inspiration-${Date.now()}`);
+      
+      if (!file) {
+        throw new Error("Failed to load inspiration image");
+      }
+      
+      validateImage(file);
+      // Revoke previous object URL if it exists
+      if (garmentImage?.preview) {
+        URL.revokeObjectURL(garmentImage.preview);
+      }
+      const preview = URL.createObjectURL(file);
+      
+      // Set the garment image
+      setGarmentImage({ file, preview });
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoadingInspirationImage(false);
+    }
+  };
+
+  // Handle change image button click
+  const handleChangeImage = (type: "person" | "garment") => {
+    if (type === "person") {
+      // Clean up URL before removing the image
+      if (personImage?.preview) {
+        URL.revokeObjectURL(personImage.preview);
+      }
+      setPersonImage(null);
+      if (personFileInputRef.current) {
+        personFileInputRef.current.value = '';
+        personFileInputRef.current.click();
+      }
+    } else {
+      // Clean up URL before removing the image
+      if (garmentImage?.preview) {
+        URL.revokeObjectURL(garmentImage.preview);
+      }
+      setGarmentImage(null);
+      if (garmentFileInputRef.current) {
+        garmentFileInputRef.current.value = '';
+        garmentFileInputRef.current.click();
+      }
+    }
+  };
+
   // Start camera
   const startCamera = async (type: "person" | "garment") => {
     setError(null);
@@ -99,12 +239,16 @@ export default function VirtualTryOn() {
         video: { facingMode: "user" },
         audio: false,
       });
-      if (type === "person" && personVideoRef.current) {
-        personVideoRef.current.srcObject = stream;
-        personVideoRef.current.play();
-      } else if (type === "garment" && garmentVideoRef.current) {
-        garmentVideoRef.current.srcObject = stream;
-        garmentVideoRef.current.play();
+      if (type === "person") {
+        if (personVideoRef.current) {
+          personVideoRef.current.srcObject = stream;
+          personVideoRef.current.play();
+        }
+      } else {
+        if (garmentVideoRef.current) {
+          garmentVideoRef.current.srcObject = stream;
+          garmentVideoRef.current.play();
+        }
       }
     } catch (err: any) {
       setError("Unable to access camera. Please check your permissions.");
@@ -128,7 +272,8 @@ export default function VirtualTryOn() {
 
   // Capture camera frame
   const captureImage = (type: "person" | "garment") => {
-    const videoEl = type === "person" ? personVideoRef.current : garmentVideoRef.current;
+    const videoEl =
+      type === "person" ? personVideoRef.current : garmentVideoRef.current;
     if (!videoEl) return;
     const canvas = document.createElement("canvas");
     canvas.width = videoEl.videoWidth;
@@ -140,6 +285,12 @@ export default function VirtualTryOn() {
     const file = dataURLtoFile(dataURL, `${type}-capture.jpg`);
     try {
       validateImage(file);
+      // Revoke previous object URL if it exists
+      if (type === "person" && personImage?.preview) {
+        URL.revokeObjectURL(personImage.preview);
+      } else if (type === "garment" && garmentImage?.preview) {
+        URL.revokeObjectURL(garmentImage.preview);
+      }
       const preview = URL.createObjectURL(file);
       if (type === "person") {
         setPersonImage({ file, preview });
@@ -151,7 +302,7 @@ export default function VirtualTryOn() {
     }
   };
 
-  // Helper: Convert data URL to File
+  // Helper: dataURL -> File
   function dataURLtoFile(dataurl: string, filename: string) {
     const arr = dataurl.split(",");
     const mime = arr[0].match(/:(.*?);/)?.[1] || "image/jpeg";
@@ -172,27 +323,7 @@ export default function VirtualTryOn() {
     };
   }, []);
 
-  // Function to fetch an AI-generated fashion tip from Gemini API
-  const fetchFashionTip = async () => {
-    try {
-      const response = await fetch("/api/gemini", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: "Generate a fashion tip for this outfit." }),
-      });
-      const tipData = await response.json();
-      if (tipData && tipData.tip) {
-        setAssistantText(tipData.tip);
-      } else {
-        setAssistantText("This cloth looks good on you!");
-      }
-    } catch (error) {
-      console.error("Error fetching fashion tip:", error);
-      setAssistantText("This cloth looks good on you!");
-    }
-  };
-
-  // Submit form: sends images to API, then stores result and updates recent images state
+  // Submit form: sends images to API, then stores result in localStorage and updates recentImages state
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -212,17 +343,25 @@ export default function VirtualTryOn() {
       });
       const data = await response.json();
       if (data.success) {
+        // Show the result in the modal
         setResultImage(data.data);
-        // Fetch AI-generated fashion tip after result is obtained
-        fetchFashionTip();
-        // Retrieve existing images from cookies
-        let storedImages = Cookies.get("recentImages");
-        let imagesArray: string[] = storedImages ? JSON.parse(storedImages) : [];
-        // Add new image at the beginning and limit to 5
-        imagesArray.unshift(data.data);
-        if (imagesArray.length > 5) imagesArray.pop();
-        Cookies.set("recentImages", JSON.stringify(imagesArray), { expires: 7 });
-        setRecentImages(imagesArray);
+
+        // Load existing images first
+        let currentImages: string[] = [];
+        try {
+          currentImages = loadFromStorage();
+        } catch (e) {
+          console.error("Error parsing stored images:", e);
+          currentImages = [];
+        }
+
+        // Add new image and limit to 5
+        const updatedImages = [data.data, ...currentImages].slice(0, 5);
+
+        // Store in localStorage
+        saveToStorage(updatedImages);
+
+        setRecentImages(updatedImages);
       } else {
         setError(data.error || "An error occurred while processing the images");
       }
@@ -239,14 +378,6 @@ export default function VirtualTryOn() {
     setResultImage(null);
   };
 
-  // Retry handlers for person and garment images
-  const handleRetryPerson = () => {
-    setPersonImage(null);
-  };
-  const handleRetryGarment = () => {
-    setGarmentImage(null);
-  };
-
   return (
     <div className="min-h-screen bg-black text-white p-4 flex flex-col items-center">
       <h1 className="text-3xl font-bold mb-6 text-center">Virtual Try-On</h1>
@@ -255,72 +386,206 @@ export default function VirtualTryOn() {
           {error}
         </div>
       )}
-
-      {/* Upload/Camera Section */}
-      <form onSubmit={handleSubmit} className="space-y-8 w-full max-w-2xl flex flex-col items-center">
+      {/* Upload/Camera section */}
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-8 w-full max-w-2xl flex flex-col items-center"
+      >
         {/* Person Section */}
         <div className="w-full flex flex-col items-center">
-          <label className="block font-medium mb-2 text-center">Person Image:</label>
-          <div className="w-full max-w-sm border border-gray-600 bg-gray-800 rounded p-4 flex flex-col items-center relative">
-            {personImage ? (
-              <>
-                <div className="relative w-full h-64 rounded overflow-hidden bg-black">
-                  <Image
-                    src={personImage.preview}
-                    alt="Person Preview"
-                    fill
-                    className="object-contain"
+          <label className="block font-medium mb-2 text-center">
+            Person Image:
+          </label>
+          <div className="flex space-x-2 mb-2">
+            <button
+              type="button"
+              className={`px-4 py-2 rounded font-medium ${
+                useCameraPerson
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-700 hover:bg-gray-600"
+              }`}
+              onClick={() => {
+                setUseCameraPerson(true);
+                stopCamera("person");
+                startCamera("person");
+              }}
+            >
+              Live Camera
+            </button>
+            <button
+              type="button"
+              className={`px-4 py-2 rounded font-medium ${
+                !useCameraPerson
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-700 hover:bg-gray-600"
+              }`}
+              onClick={() => {
+                setUseCameraPerson(false);
+                stopCamera("person");
+              }}
+            >
+              Upload Picture
+            </button>
+          </div>
+          {useCameraPerson ? (
+            <div className="flex flex-col items-center">
+              <video
+                ref={personVideoRef}
+                className="w-48 h-64 border border-gray-700 rounded bg-black"
+                autoPlay
+                muted
+              ></video>
+              <button
+                type="button"
+                onClick={() => captureImage("person")}
+                className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              >
+                Capture
+              </button>
+            </div>
+          ) : (
+            <div className="bg-gray-800 border border-gray-600 w-full max-w-sm rounded p-4">
+              {personImage?.preview ? (
+                <div className="flex flex-col items-center">
+                  <div className="relative h-64 w-48 border border-gray-700 rounded overflow-hidden mb-3">
+                    {/* Using regular img tag instead of Next.js Image for local object URLs */}
+                    <img
+                      src={personImage.preview}
+                      alt="Person Preview"
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleChangeImage("person")}
+                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                  >
+                    Change Image
+                  </button>
+                  <input
+                    ref={personFileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files.length > 0) {
+                        handleFileUpload([e.target.files[0]], "person");
+                      }
+                    }}
                   />
                 </div>
-                <button
-                  type="button"
-                  onClick={handleRetryPerson}
-                  className="absolute bottom-2 left-2 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
-                >
-                  Change Image
-                </button>
-              </>
-            ) : (
-              <FileUpload onChange={(files) => handleFileUpload(files, "person")} className="w-full" />
-            )}
-          </div>
+              ) : (
+                <FileUpload
+                  onChange={(files) => handleFileUpload(files, "person")}
+                  className="w-full"
+                />
+              )}
+            </div>
+          )}
         </div>
         {/* Garment Section */}
         <div className="w-full flex flex-col items-center">
-          <label className="block font-medium mb-2 text-center">Garment Image:</label>
-          <div className="w-full max-w-sm border border-gray-600 bg-gray-800 rounded p-4 flex flex-col items-center relative">
-            {garmentImage ? (
-              <>
-                <div className="relative w-full h-64 rounded overflow-hidden bg-black">
-                  <Image
-                    src={garmentImage.preview}
-                    alt="Garment Preview"
-                    fill
-                    className="object-contain"
+          <label className="block font-medium mb-2 text-center">
+            Garment Image:
+          </label>
+          <div className="flex space-x-2 mb-2">
+            <button
+              type="button"
+              className={`px-4 py-2 rounded font-medium ${
+                useCameraGarment
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-700 hover:bg-gray-600"
+              }`}
+              onClick={() => {
+                setUseCameraGarment(true);
+                stopCamera("garment");
+                startCamera("garment");
+              }}
+            >
+              Live Camera
+            </button>
+            <button
+              type="button"
+              className={`px-4 py-2 rounded font-medium ${
+                !useCameraGarment
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-700 hover:bg-gray-600"
+              }`}
+              onClick={() => {
+                setUseCameraGarment(false);
+                stopCamera("garment");
+              }}
+            >
+              Upload Picture
+            </button>
+          </div>
+          {useCameraGarment ? (
+            <div className="flex flex-col items-center">
+              <video
+                ref={garmentVideoRef}
+                className="w-48 h-64 border border-gray-700 rounded bg-black"
+                autoPlay
+                muted
+              ></video>
+              <button
+                type="button"
+                onClick={() => captureImage("garment")}
+                className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              >
+                Capture
+              </button>
+            </div>
+          ) : (
+            <div className="bg-gray-800 border border-gray-600 w-full max-w-sm rounded p-4">
+              {garmentImage?.preview ? (
+                <div className="flex flex-col items-center">
+                  <div className="relative h-64 w-48 border border-gray-700 rounded overflow-hidden mb-3">
+                    {/* Using regular img tag instead of Next.js Image for local object URLs */}
+                    <img
+                      src={garmentImage.preview}
+                      alt="Garment Preview"
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleChangeImage("garment")}
+                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                  >
+                    Change Image
+                  </button>
+                  <input
+                    ref={garmentFileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files.length > 0) {
+                        handleFileUpload([e.target.files[0]], "garment");
+                      }
+                    }}
                   />
                 </div>
-                <button
-                  type="button"
-                  onClick={handleRetryGarment}
-                  className="absolute bottom-2 left-2 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
-                >
-                  Change Image
-                </button>
-              </>
-            ) : (
-              <FileUpload onChange={(files) => handleFileUpload(files, "garment")} className="w-full" />
-            )}
-          </div>
+              ) : (
+                <FileUpload
+                  onChange={(files) => handleFileUpload(files, "garment")}
+                  className="w-full"
+                />
+              )}
+            </div>
+          )}
         </div>
         {/* Submit Button */}
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || loadingInspirationImage}
           className={`w-full max-w-sm px-4 py-2 rounded font-medium transition-colors ${
-            loading ? "bg-gray-500 cursor-not-allowed" : "bg-blue-500 hover:bg-blue-600 text-white"
+            loading || loadingInspirationImage
+              ? "bg-gray-500 cursor-not-allowed"
+              : "bg-blue-500 hover:bg-blue-600 text-white"
           }`}
         >
-          {loading ? (
+          {loading || loadingInspirationImage ? (
             <span className="flex items-center justify-center">
               <svg
                 className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
@@ -328,88 +593,87 @@ export default function VirtualTryOn() {
                 fill="none"
                 viewBox="0 0 24 24"
               >
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
               </svg>
-              Processing...
+              {loading ? "Processing..." : "Loading image..."}
             </span>
           ) : (
             "Try On"
           )}
         </button>
       </form>
-
       {/* Modal for result */}
       {resultImage && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
           <div className="relative bg-neutral-900 text-white max-w-xl w-full rounded-lg shadow-lg p-4">
-            <button onClick={handleCloseModal} className="absolute top-2 right-2 text-gray-300 hover:text-white">
+            <button
+              onClick={handleCloseModal}
+              className="absolute top-2 right-2 text-gray-300 hover:text-white"
+            >
               <span className="text-2xl">&times;</span>
             </button>
-            <h2 className="text-xl font-bold mb-4 text-center">Your Virtual Try-On</h2>
+            <h2 className="text-xl font-bold mb-4 text-center">
+              Your Virtual Try-On
+            </h2>
             <div className="relative w-full h-[500px] border border-gray-700 rounded mb-4 overflow-hidden">
-              <Image src={resultImage} alt="Try-on Result" fill className="object-contain" />
+              {/* For remote URLs, Next.js Image is fine */}
+              <Image
+                src={resultImage}
+                alt="Try-on Result"
+                fill
+                className="object-contain"
+              />
             </div>
             <p className="text-sm text-gray-400 mb-4 text-center">
               Generated on {new Date().toLocaleDateString()}
             </p>
-            {/* AI Generated Fashion Tip */}
-            <p className="text-lg font-semibold text-center mb-4">
-              {assistantText || "This cloth looks good on you!"}
-            </p>
-            {/* Save and Share Buttons */}
-            <div className="flex justify-center space-x-4 mt-4">
-              <button
-                onClick={() => {
-                  if (resultImage) {
-                    const link = document.createElement("a");
-                    link.href = resultImage;
-                    link.download = "virtual-tryon.png";
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                  }
-                }}
-                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-              >
+            <div className="flex items-center justify-center space-x-4">
+              <button className="px-4 py-2 rounded bg-gray-700 hover:bg-gray-600">
                 Save
               </button>
-              <button
-                onClick={() => {
-                  if (navigator.share && resultImage) {
-                    navigator
-                      .share({
-                        title: "Check out my Virtual Try-On!",
-                        text: "Here's my virtual outfit!",
-                        url: resultImage,
-                      })
-                      .catch((error) => console.log("Error sharing:", error));
-                  } else {
-                    alert("Sharing is not supported on this device.");
-                  }
-                }}
-                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-              >
+              <button className="px-4 py-2 rounded bg-blue-600 hover:bg-blue-500">
                 Share
               </button>
             </div>
           </div>
         </div>
       )}
-
-      {/* Recently Tried / Inspirations Section */}
-      <RecentlyInspirationsSection recentImages={recentImages} />
-
+      {/* Recently Tried / Inspirations Section using CardDemo with props */}
+      <RecentlyInspirationsSection 
+        recentImages={recentImages} 
+        onInspirationSelect={handleInspirationSelect}
+        loadingInspirationImage={loadingInspirationImage}
+      />
       <Footer />
     </div>
   );
 }
 
 /** 
- * Inline component for "Recently Tried" and "Inspirations" tabs using CardDemo with props.
+ * Inline component for "Recently Tried" and "Inspirations" tabs, using CardDemo with props.
  * Only title, description, and backgroundImage are passed.
  */
-function RecentlyInspirationsSection({ recentImages }: { recentImages: string[] }) {
+function RecentlyInspirationsSection({
+  recentImages,
+  onInspirationSelect,
+  loadingInspirationImage
+}: {
+  recentImages: string[];
+  onInspirationSelect: (imageUrl: string) => Promise<void>;
+  loadingInspirationImage: boolean;
+}) {
   const [activeTab, setActiveTab] = useState<"recent" | "inspirations">("recent");
 
   const handleTabClick = (tab: "recent" | "inspirations") => {
@@ -444,6 +708,7 @@ function RecentlyInspirationsSection({ recentImages }: { recentImages: string[] 
     },
   ];
 
+  // If there are stored images, create card data from them; otherwise, use demo data.
   const recentCards =
     recentImages && recentImages.length > 0
       ? recentImages.map((img: string, idx: number) => ({
@@ -458,64 +723,142 @@ function RecentlyInspirationsSection({ recentImages }: { recentImages: string[] 
       title: "Future Trends",
       description: "Innovative styles for tomorrow.",
       backgroundImage:
-        "https://images.unsplash.com/photo-1503341455253-b2e723bb3dbb?auto=format&fit=crop&w=1650&q=80",
+        "https://levihsu-ootdiffusion.hf.space/file=/tmp/gradio/44aee6b576cae51eeb979311306375b56b7e0d8b/02305_00.jpg",
     },
     {
       title: "Street Wear",
       description: "Casual looks with an edge.",
       backgroundImage:
-        "https://images.unsplash.com/photo-1503341455253-b2e723bb3dbb?auto=format&fit=crop&w=1650&q=80",
+        "https://levihsu-ootdiffusion.hf.space/file=/tmp/gradio/e28fc56e21c31a3b88cecfaa12d05f4231fe67c9/02015_00.jpg",
     },
     {
       title: "High Fashion",
       description: "Luxury designs for discerning tastes.",
       backgroundImage:
-        "https://images.unsplash.com/photo-1489987707025-afc1f226d198?auto=format&fit=crop&w=1650&q=80",
+        "https://levihsu-ootdiffusion.hf.space/file=/tmp/gradio/31c958b21068795c7a90552fc6dc123282b4c7ab/00126_00.jpg",
     },
     {
       title: "Eco Chic",
       description: "Sustainable fashion that looks great.",
       backgroundImage:
-        "https://images.unsplash.com/photo-1520975911061-40d77079a3e6?auto=format&fit=crop&w=1650&q=80",
+        "https://levihsu-ootdiffusion.hf.space/file=/tmp/gradio/f42b2bf4352df51248c5d25a0244b783026b76b8/06123_00.jpg",
     },
   ];
 
+  // Clickable card wrapper component with proper typing
+  const ClickableCardDemo = ({ 
+    card, 
+    onClick, 
+    isClickable = false, 
+    isLoading = false 
+  }: { 
+    card: Card; 
+    onClick: (imageUrl: string) => void; 
+    isClickable?: boolean; 
+    isLoading?: boolean;
+  }) => {
+    return (
+      <div 
+        className={`relative ${isClickable ? 'cursor-pointer transform transition-transform hover:scale-105' : ''}`} 
+        onClick={isClickable ? () => onClick(card.backgroundImage) : undefined}
+      >
+        <CardDemo
+          backgroundImage={card.backgroundImage}
+          title={card.title}
+          description={card.description}
+        />
+        {isClickable && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-0 hover:bg-opacity-30 transition-opacity">
+            <span className="bg-blue-600 text-white px-2 py-1 rounded text-xs opacity-0 hover:opacity-100">
+              Use this garment
+            </span>
+          </div>
+        )}
+        {isLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
+            <svg
+              className="animate-spin h-8 w-8 text-white"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              ></circle>
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <section className="mt-10 w-full max-w-4xl mx-auto text-center">
+      {/* Tabs */}
       <div className="flex space-x-2 border-b border-gray-700 pb-2 mb-4 justify-center">
         <button
-          onClick={() => handleTabClick("recent")}
           className={`flex items-center px-4 py-2 rounded-full text-sm transition-colors ${
             activeTab === "recent"
               ? "bg-gray-700 text-white"
               : "bg-gray-800 text-gray-400 hover:bg-gray-700"
           }`}
+          onClick={() => handleTabClick("recent")}
         >
-          <span className="mr-2">⏱</span>Recently Tried
+          <span className="mr-2">⏱</span>
+          Recently Tried
         </button>
         <button
-          onClick={() => handleTabClick("inspirations")}
           className={`flex items-center px-4 py-2 rounded-full text-sm transition-colors ${
             activeTab === "inspirations"
               ? "bg-gray-700 text-white"
               : "bg-gray-800 text-gray-400 hover:bg-gray-700"
           }`}
+          onClick={() => handleTabClick("inspirations")}
         >
-          <span className="mr-2">✨</span>Inspirations
+          <span className="mr-2">✨</span>
+          Inspirations
         </button>
       </div>
+      
       {activeTab === "recent" ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
           {recentCards.map((card, idx) => (
-            <CardDemo key={idx} backgroundImage={card.backgroundImage} title={card.title} description={card.description} />
+            <ClickableCardDemo
+              key={idx}
+              card={card}
+              onClick={() => {}}
+              isClickable={false}
+            />
           ))}
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
           {inspirationCards.map((card, idx) => (
-            <CardDemo key={idx} backgroundImage={card.backgroundImage} title={card.title} description={card.description} />
+            <ClickableCardDemo
+              key={idx}
+              card={card}
+              onClick={onInspirationSelect}
+              isClickable={true}
+              isLoading={loadingInspirationImage}
+            />
           ))}
         </div>
+      )}
+      
+      {activeTab === "inspirations" && (
+        <p className="mt-4 text-gray-400 text-sm">
+          Click on any garment above to use it in the try-on
+        </p>
       )}
     </section>
   );
